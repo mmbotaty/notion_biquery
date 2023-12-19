@@ -1,0 +1,724 @@
+
+function notionUrlFetch(){
+
+    // Notion API URL and headers
+    var notionUrl = 'https://api.notion.com/v1/databases/ba5dbe70ae0d48819590918d5ca05456/query';
+
+    // Notion API key (replace with your actual Notion API key)
+    var notionApiKey = 'secret_Jw7jM93NHM2xniRprKNqFnZ6T2WcGulTaOorYIw44T8';
+
+    // Google Sheet
+  
+    // Fetch data from Notion
+    var headers = {
+        'Authorization': 'Bearer ' + notionApiKey,
+        'Notion-Version': '2022-06-28',
+        'Content-Type': 'application/json',
+    };
+  
+    var options = {
+        'method': 'post',
+        'headers': headers,
+    };
+  
+     var results = []; // This array will store all the results
+  var nextCursor = null; // This variable will store the next cursor value
+  do {
+    // If there is a next cursor, add it to the payload
+    if (nextCursor) {
+      options.payload = JSON.stringify({
+        "start_cursor": nextCursor
+      });
+    }
+    // Make the request to Notion
+    var response = UrlFetchApp.fetch(notionUrl, options);
+    // Parse the response as JSON
+    var data = JSON.parse(response.getContentText());
+    // Append the results to the array
+    results = results.concat(data.results);
+    // Get the next cursor value
+    nextCursor = data.next_cursor;
+  } while (nextCursor); // Repeat the loop until there is no more next cursor
+  return results; // Return the array of results
+
+    // Fetch data from Notion
+    // var notionResponse = UrlFetchApp.fetch(notionUrl, options);
+    // var notionData = JSON.parse(notionResponse.getContentText());
+
+    // // Extract the results
+
+    // return notionData;
+
+
+}
+
+function notionProperties(i) {
+  //  i = 202
+  // Replace 'i' with the desired index or row number
+   var notionRecords = notionUrlFetch();
+  //  var notionRecords = notionData.results;
+
+   var notionID = ''
+   if(notionRecords[i] && notionRecords[i].id) {
+      notionID = notionRecords[i].id
+   }
+
+   Logger.log('Notion ID :' + notionID)
+
+    
+    // Extract Status property
+    var notionStatus = '';
+    if (notionRecords[i] && notionRecords[i].properties && notionRecords[i].properties["Status"] && notionRecords[i].properties["Status"].status && notionRecords[i].properties["Status"].status.name) {
+        notionStatus = notionRecords[i].properties["Status"].status.name;
+    }
+
+    // log the extracted status
+    Logger.log('Notion Status (Status): ' + notionStatus);
+
+    // var notionID = '';
+
+    // if (notionRecords[i] && notionRecords[i].id){
+    //   notionID = notionRecords[i].id;
+    // }
+
+    // Logger.log('Notion ID: ' + notionID);
+
+
+    // Extract Platform property (multi-select)
+    var notionPlatform = '';
+    if (notionRecords[i] && notionRecords[i].properties && notionRecords[i].properties["Platform"] && notionRecords[i].properties["Platform"].multi_select) {
+        // Loop through each selected item
+        for (var j = 0; j < notionRecords[i].properties["Platform"].multi_select.length; j++) {
+            var selectedPlatform = notionRecords[i].properties["Platform"].multi_select[j];
+            var platformName = selectedPlatform.name;
+      
+            // Append the platform name to the notionPlatform variable
+            notionPlatform += platformName + ', ';
+        }   
+    
+        // Remove the trailing comma and space
+        notionPlatform = notionPlatform.slice(0, -2);
+    }
+
+    // Ensure that notionPlatform is a string
+    // if (typeof notionPlatform !== 'string') {
+    //     notionPlatform = '';
+    // }
+
+    // log the extracted
+    Logger.log('Notion Platform (Multi-select): ' + notionPlatform);
+    
+
+    // Extract Objective property
+    var notionObjective = '';
+    if (notionRecords[i] && notionRecords[i].properties && notionRecords[i].properties["Objective"] && notionRecords[i].properties["Objective"].select) {
+        notionObjective = notionRecords[i].properties["Objective"].select.name;
+    }
+
+    // Log the extracted Objective
+    Logger.log('Notion Objective: ' + notionObjective);
+
+    var notionMediaType = '';
+    if (notionRecords[i] && notionRecords[i].properties && notionRecords[i].properties["Media Type"] && notionRecords[i].properties["Media Type"].select) {
+        notionMediaType = notionRecords[i].properties["Media Type"].select.name;
+    }
+
+    // Log the extracted Objective
+    Logger.log('Notion Media Type: ' + notionMediaType);
+
+    var notionMediaQuality = '';
+    if (notionRecords[i] && notionRecords[i].properties && notionRecords[i].properties["Media Type"] && notionRecords[i].properties["Media Quality"].select) {
+        notionMediaQuality = notionRecords[i].properties["Media Quality"].select.name;
+    }
+
+    // Log the extracted Objective
+    Logger.log('Notion Quality: ' + notionMediaQuality);
+
+
+
+    /* Extract Account Manager property
+        the property is a person property in a notion database
+    */
+
+    var notionAccountManager = '';
+    if (notionRecords[i] && notionRecords[i].properties && notionRecords[i].properties["Account Manager"] && notionRecords[i].properties["Account Manager"].people) {
+      // Loop through each selected item
+      for (var j = 0; j < notionRecords[i].properties["Account Manager"].people.length; j++) {
+        var selectedAccountManager = notionRecords[i].properties["Account Manager"].people[j];
+        var accountManagerName = selectedAccountManager.name;
+        
+        // Append the account manager name to the notionAccountManager variable
+        notionAccountManager += accountManagerName + ', ';
+      }
+      
+      // Remove the trailing comma and space
+      notionAccountManager = notionAccountManager.slice(0, -2);
+    }
+    
+        // Ensure that notionAccountManager is a string
+        if (typeof notionAccountManager !== 'string') {
+          notionAccountManager = '';
+        }
+
+
+    Logger.log('Notion Account Manager (People): ' + notionAccountManager);
+
+
+    /* Extract Sponsored property
+    the property is a checkbox property in a notion database
+    */
+
+    var notionSponsored = '';
+    if(notionRecords[i].properties["Sponsored "].checkbox == true){
+        notionSponsored = true;
+          Logger.log('Notion Sponsored (Checkbox) : true');
+
+    }
+    else 
+    {
+        notionSponsored = false;
+        Logger.log('Notion Sponsored (Checkbox): false');
+
+    }
+      // Remove the trailing comma and space
+  
+    
+
+
+    //  Extract the Content Creator property
+
+    var notionContentCreator = '';
+    if (notionRecords[i] && notionRecords[i].properties && notionRecords[i].properties["Content Creator"] && notionRecords[i].properties["Content Creator"].people) {
+      // Loop through each selected item
+      for (var j = 0; j < notionRecords[i].properties["Content Creator"].people.length; j++) {
+            var selectedContentCreator = notionRecords[i].properties["Content Creator"].people[j];
+            var contentCreatorName = selectedContentCreator.name;
+        
+            // Append the content creator name to the notionContentCreator variable
+            notionContentCreator += contentCreatorName + ', ';
+        }
+      
+      // Remove the trailing comma and space
+      notionContentCreator = notionContentCreator.slice(0, -2);
+    }
+    
+    // Ensure that notionContentCreator is a string
+    if (typeof notionContentCreator !== 'string') {
+          notionContentCreator = '';
+    }
+
+
+
+    // Extract the Content Deadline property
+
+    var notionContentDeadline = '';
+    if (notionRecords[i] && notionRecords[i].properties && notionRecords[i].properties["Content Deadline"] && notionRecords[i].properties["Content Deadline"].date) {
+      // Loop through each selected item
+      // for (var j = 0; j < notionRecords[i].properties["Content Deadline"].date.length; j++) {
+      //       var selectedContentDeadline = notionRecords[i].properties["Content Deadline"].date[j];
+      //       var contentDeadlineName = selectedContentDeadline.name;
+        
+      //       // Append the content deadline name to the notionContentDeadline variable
+      //       notionContentDeadline += contentDeadlineName + ', ';
+      //   }
+      
+      // Remove the trailing comma and space
+      notionContentDeadline = notionRecords[i].properties["Content Deadline"].date.start;
+    }
+
+    // Ensure that notionContentDeadline is a string
+    // if (typeof notionContentDeadline !== 'string') {
+    //       notionContentDeadline = '';
+    // }
+
+    // log the extracted Content Deadline
+
+    Logger.log('Notion Content Deadline: ' + notionContentDeadline);
+
+    
+    // Extract the Designer property
+
+    var notionDesigner = '';
+    if (notionRecords[i] && notionRecords[i].properties && notionRecords[i].properties["Designer"] && notionRecords[i].properties["Designer"].people) {
+      // Loop through each selected item
+      for (var j = 0; j < notionRecords[i].properties["Designer"].people.length; j++) {
+            var selectedDesigner = notionRecords[i].properties["Designer"].people[j];
+            var designerName = selectedDesigner.name;
+        
+            // Append the designer name to the notionDesigner variable
+            notionDesigner += designerName + ', ';
+        }
+      
+      // Remove the trailing comma and space
+      notionDesigner = notionDesigner.slice(0, -2);
+    }
+
+    // Ensure that notionDesigner is a string
+    if (typeof notionDesigner !== 'string') {
+          notionDesigner = '';
+    }
+
+    // log the extracted Designer
+    
+    Logger.log('Notion Designer: ' + notionDesigner);
+
+
+    // Extract the Media Deadline property
+
+    var notionMediaDeadline = '';
+    if (notionRecords[i] && notionRecords[i].properties && notionRecords[i].properties["Media Deadline"] && notionRecords[i].properties["Media Deadline"].date) {
+      // Loop through each selected item
+      notionMediaDeadline = notionRecords[i].properties["Media Deadline"].date.start
+      
+      // Remove the trailing comma and space
+      // notionMediaDeadline = notionMediaDeadline.slice(0, -2);
+    }
+
+    // // Ensure that notionMediaDeadline is a string
+
+    // if (typeof notionMediaDeadline !== 'string') {
+    //       notionMediaDeadline = '';
+    // }
+    // log the extracted Media Deadline
+
+    Logger.log('Notion Media Deadline: ' + notionMediaDeadline);
+
+
+    // Extract the Media property
+
+    var notionMedia = '';
+
+    if (notionRecords[i] && notionRecords[i].properties && notionRecords[i].properties["Media"] && notionRecords[i].properties["Media"].files) {
+      // Loop through each selected item
+      for (var j = 0; j < notionRecords[i].properties["Media"].files.length; j++) {
+            var selectedMedia = notionRecords[i].properties["Media"].files[j];
+            var mediaName = selectedMedia.name;
+        
+            // Append the media name to the notionMedia variable
+            notionMedia += mediaName + ', ';
+        }
+      
+      // Remove the trailing comma and space
+      notionMedia = notionMedia.slice(0, -2);
+    }
+    
+
+    // Ensure that notionMedia is a string
+
+    if (typeof notionMedia !== 'string') {
+          notionMedia = '';
+    }
+
+
+    // log the extracted Media
+
+    Logger.log('Notion Media: ' + notionMedia);
+
+
+    // Extract the Publication Date property
+
+    var notionPublicationDate = '';
+
+    if (notionRecords[i] && notionRecords[i].properties && notionRecords[i].properties["Publication Date"] && notionRecords[i].properties["Publication Date"].date) {
+      // Loop through each selected item
+      // for (var j = 0; j < notionRecords[i].properties["Publication Date"].date.length; j++) {
+      //       var selectedPublicationDate = notionRecords[i].properties["Publication Date"].date[j];
+      //       var publicationDateName = selectedPublicationDate.name;
+        
+      //       // Append the publication date name to the notionPublicationDate variable
+      //       notionPublicationDate += publicationDateName + ', ';
+      //   }
+      
+      // Remove the trailing comma and space
+      notionPublicationDate = notionRecords[i].properties["Publication Date"].date.start;
+    }
+
+    // Ensure that notionPublicationDate is a string
+
+    if (typeof notionPublicationDate !== 'string') {
+          notionPublicationDate = '';
+    }
+
+    // log the extracted Publication Date
+
+    Logger.log('Notion Publication Date: ' + notionPublicationDate);
+
+
+    // Extract the Edited Timestamp property
+
+    var notionEditedTimestamp = '';
+
+    if (notionRecords[i] && notionRecords[i].last_edited_time) {
+      // Loop through each selected item
+      // for (var j = 0; j < notionRecords[i].properties["Edited Timestamp"].date.length; j++) {
+      //       var selectedEditedTimestamp = notionRecords[i].properties["Edited Timestamp"].date[j];
+      //       var editedTimestampName = selectedEditedTimestamp.name;
+        
+      //       // Append the edited timestamp name to the notionEditedTimestamp variable
+      //       notionEditedTimestamp += editedTimestampName + ', ';
+      //   }
+      
+      // Remove the trailing comma and space
+      // notionEditedTimestamp = notionEditedTimestamp.slice(0, -2);
+      notionEditedTimestamp = notionRecords[i].last_edited_time
+    }
+
+    // log the extracted Edited Timestamp
+
+    Logger.log('Notion Edited Timestamp: ' + notionEditedTimestamp);
+
+    var notionCreatedTimestamp = '';
+
+    if (notionRecords[i] && notionRecords[i].created_time) {
+      // Loop through each selected item
+      // for (var j = 0; j < notionRecords[i].properties["Edited Timestamp"].date.length; j++) {
+      //       var selectedEditedTimestamp = notionRecords[i].properties["Edited Timestamp"].date[j];
+      //       var editedTimestampName = selectedEditedTimestamp.name;
+        
+      //       // Append the edited timestamp name to the notionEditedTimestamp variable
+      //       notionEditedTimestamp += editedTimestampName + ', ';
+      //   }
+      
+      // Remove the trailing comma and space
+      // notionEditedTimestamp = notionEditedTimestamp.slice(0, -2);
+      notionCreatedTimestamp = notionRecords[i].created_time
+    }
+
+    // log the extracted Edited Timestamp
+
+    Logger.log('Notion Edited Timestamp: ' + notionCreatedTimestamp);
+
+
+     // Extract the Caption property
+
+    var notionContent = '';
+    if (notionRecords[i] && notionRecords[i].properties && notionRecords[i].properties["Content"] && notionRecords[i].properties["Content"].rich_text) {
+      // Loop through each selected item
+      for (var j = 0; j < notionRecords[i].properties["Content"].rich_text.length; j++) {
+            var selectedContent = notionRecords[i].properties["Content"].rich_text[j];
+            var contentnName = selectedContent.plain_text;
+        
+            // Append the caption name to the notionCaption variable
+            notionContent += contentnName + ', ';
+        }
+      
+      // Remove the trailing comma and space
+      notionContent = notionContent.slice(0, -2);
+    }
+
+    // Ensure that notionCaption is a string
+    if (typeof notionContent !== 'string') {
+          notionContent = '';
+    }
+
+    // Log the extracted Caption
+    Logger.log('Notion Content: ' + notionContent);
+
+
+  var notionVisual = '';
+    if (notionRecords[i] && notionRecords[i].properties && notionRecords[i].properties["Visual"] && notionRecords[i].properties["Visual"].rich_text) {
+      // Loop through each selected item
+      for (var j = 0; j < notionRecords[i].properties["Visual"].rich_text.length; j++) {
+            var selectedVisual = notionRecords[i].properties["Visual"].rich_text[j];
+            var visualnName = selectedVisual.plain_text;
+        
+            // Append the caption name to the notionCaption variable
+            notionVisual += visualnName + ', ';
+        }
+      
+      // Remove the trailing comma and space
+      notionVisual = notionVisual.slice(0, -2);
+    }
+
+    // Ensure that notionCaption is a string
+    if (typeof notionVisual !== 'string') {
+          notionVisual = '';
+    }
+
+    // Log the extracted Caption
+    Logger.log('Notion Visual: ' + notionVisual);
+
+    var notionDescription = '';
+    if (notionRecords[i] && notionRecords[i].properties && notionRecords[i].properties["Description"] && notionRecords[i].properties["Description"].rich_text) {
+      // Loop through each selected item
+      for (var j = 0; j < notionRecords[i].properties["Description"].rich_text.length; j++) {
+            var selectedDescription = notionRecords[i].properties["Description"].rich_text[j];
+            var descriptionName = selectedDescription.plain_text;
+        
+            // Append the caption name to the notionCaption variable
+            notionDescription += descriptionName + ', ';
+        }
+      
+      // Remove the trailing comma and space
+      notionDescription = notionDescription.slice(0, -2);
+    }
+
+    // Ensure that notionCaption is a string
+    if (typeof notionDescription !== 'string') {
+          notionDescription = '';
+    }
+
+    // Log the extracted Caption
+    Logger.log('Notion Description: ' + notionDescription);
+
+    var notionCampaign = '';
+    if (notionRecords[i] && notionRecords[i].properties && notionRecords[i].properties["Campaign"] && notionRecords[i].properties["Campaign"].rich_text) {
+      // Loop through each selected item
+      for (var j = 0; j < notionRecords[i].properties["Campaign"].rich_text.length; j++) {
+            var selectedCampaign = notionRecords[i].properties["Campaign"].rich_text[j];
+            var campaignName = selectedCampaign.plain_text;
+        
+            // Append the caption name to the notionCaption variable
+            notionCampaign += campaignName + ', ';
+        }
+      
+      // Remove the trailing comma and space
+      notionCampaign = notionCampaign.slice(0, -2);
+    }
+
+    // Ensure that notionCaption is a string
+    if (typeof notionCampaign !== 'string') {
+          notionCampaign = '';
+    }
+
+    // Log the extracted Caption
+    Logger.log('Notion Campaign: ' + notionCampaign);
+
+        var notionLink = '';
+    if (notionRecords[i] && notionRecords[i].properties && notionRecords[i].properties["put the LINK HERE"] && notionRecords[i].properties["put the LINK HERE"].files) {
+      // Loop through each selected item
+      for (var j = 0; j < notionRecords[i].properties["put the LINK HERE"].files.length; j++) {
+            var selectedLink = notionRecords[i].properties["put the LINK HERE"].files[j];
+            var linkName = selectedLink.name;
+        
+            // Append the caption name to the notionCaption variable
+            notionLink += linkName + ', ';
+            // notionLink = linkName;
+        }
+      
+      // Remove the trailing comma and space
+      notionLink = notionLink.slice(0, -2);
+    }
+
+    // Ensure that notionCaption is a string
+    if (typeof notionLink !== 'string') {
+          notionLink = '';
+    }
+
+    // Log the extracted Caption
+    Logger.log('Notion Link: ' + notionLink);
+
+    notionEditedBy = '';
+    if (notionRecords[i] && notionRecords[i].properties && notionRecords[i].last_edited_by && notionRecords[i].last_edited_by.id) {
+      // Loop through each selected item
+        notionEditedBy = notionRecords[i].last_edited_by.id;
+        
+        // Append the account manager name to the notionAccountManager variable
+        // notionAccountManager += accountManagerName + ', ';
+      }
+
+
+    Logger.log('Notion Account Manager (People): ' + notionEditedBy);
+
+    notionPageLink = '';
+    if (notionRecords[i] && notionRecords[i].url) {
+      // Loop through each selected item
+        notionPageLink = notionRecords[i].url;
+        
+        // Append the account manager name to the notionAccountManager variable
+        // notionAccountManager += accountManagerName + ', ';
+      }
+
+
+    Logger.log('Notion Account Manager (People): ' + notionPageLink);
+
+      var notionClientText = '';
+    if (notionRecords[i] && notionRecords[i].properties && notionRecords[i].properties["Client_Text"] && notionRecords[i].properties["Client_Text"].rich_text) {
+      // Loop through each selected item
+      for (var j = 0; j < notionRecords[i].properties["Client_Text"].rich_text.length; j++) {
+            var selectedClient = notionRecords[i].properties["Client_Text"].rich_text[j];
+            var clientName = selectedClient.text.content;
+        
+            // Append the caption name to the notionCaption variable
+            notionClientText += clientName + ', ';
+        }
+      
+      // Remove the trailing comma and space
+      notionClientText = notionClientText.slice(0, -2);
+    }
+
+    // Ensure that notionCaption is a string
+    if (typeof notionClientText !== 'string') {
+          notionClientText = '';
+    }
+
+    // Log the extracted Caption
+    Logger.log('Notion Client: ' + notionClientText);
+
+        // Extracted data
+    var extractedData = {
+        'ID': notionID,
+        'Client':notionClientText,
+        'Created_Time':notionCreatedTimestamp,
+        'Status': notionStatus,
+        'Platform': notionPlatform,
+        'Objective': notionObjective,
+        'Sponsored' : notionSponsored,
+        'ACM_ID':notionAccountManager,
+        'Publishing_date': notionPublicationDate ,
+        'CC_ID':notionContentCreator,
+        'CC_DDL':notionContentDeadline,
+        'Visual':notionVisual,
+        'Content':notionContent,
+        'Description':notionDescription,
+        'Designer_ID':notionDesigner,
+        'Media_DDL':notionMediaDeadline,
+        'Media_Type': notionMediaType,
+        'Media_Quality':notionMediaQuality,
+        'MediaLink':notionLink,
+        'edit_time':notionEditedTimestamp,
+        'edit_by':notionEditedBy,
+        'page_link': notionPageLink
+    };
+
+    return extractedData;
+}
+
+
+function processNotionData() {
+  var notionRecords = notionUrlFetch();
+  var allResults = [];
+
+  for (var i = 0; i < notionRecords.length; i++) {
+    // Call your notionProperties function for each i
+    var result = notionProperties(i);
+    Logger.log('result' + result)
+    
+    // Check if the data should be appended based on edit_by and edit_time
+    // if (shouldAppendToSheet(result.edit_by, result.edit_time)) {
+    //   appendToGoogleSheet(result);
+    //   allResults.push(result);
+    //   Logger.log(allResults)
+    // }
+
+      // Logger.log(result.edit_by + "" +result.edit_time)
+      if (shouldAppendToBigQuery(result.edit_by,result.edit_time)){
+
+        appendToBigQuery(result)
+          
+
+      }
+    }
+      // append_test(allResults)
+  
+
+  // Logger.log(allResults)
+  return allResults;
+}
+
+
+function shouldAppendToSheet(editBy, editTime) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('CalendarDB');
+  var data = sheet.getDataRange().getValues();
+  
+  for (var i = 1; i < data.length; i++) { // Skip header row
+    if (data[i][17] === editBy && data[i][18] === editTime) {
+      console.log(`Combination already exists: ${editBy}, ${editTime}`);
+      return false; // Data already exists, do not append
+    }
+  }
+
+  console.log(`Combination does not exist: ${editBy}, ${editTime}`);
+  return true; // Data does not exist, so append
+}
+
+
+// Function to append data to the Google Sheet
+function appendToGoogleSheet(data) {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('CalendarDB');
+  sheet.appendRow([
+    data.ID,
+    data.Created_Time,
+    data.Client,
+    data.Status,
+    data.Platform,
+    data.Objective,
+    data.Sponsored,
+    data.ACM_ID,
+    data.Publishing_date,
+    data.CC_ID,
+    data.CC_DDL,
+    data.Visual,
+    data.Content,
+    data.Description,
+    data.Designer_ID,
+    data.Media_DDL,
+    data.Media_Type,
+    data.Media_Quality,
+    data.MediaLink,
+    data.edit_time,
+    data.edit_by,
+    data.page_link
+  ]);
+}
+
+
+  var projectId = 'artful-fragment-401718';
+  var datasetId = 'notion';
+  var tableId = 'calendardb';
+
+function shouldAppendToBigQuery(editBy, editTime) {
+  // Replace 'PROJECT_ID', 'DATASET_ID', and 'TABLE_ID' with your actual project, dataset, and table IDs
+
+  // Prepare the SQL query with parameters using standard SQL syntax
+  var query = "SELECT * FROM `" + projectId + '.' + datasetId + "." + tableId + "` " +
+              'WHERE edit_by = "' + editBy + '" AND edit_time = "' + editTime + '"';
+
+  // Run the query job
+  var queryJob = BigQuery.Jobs.query({
+    query: query,
+    useLegacySql: false // Use standard SQL
+  }, projectId);
+
+  const jobId = queryJob.jobReference.jobId;
+  let sleeptimems = 500;
+
+
+  // Wait for the query job to complete
+  while (!queryJob.jobComplete) {
+    Utilities.sleep(sleeptimems); 
+    sleepTimeMs *= 2;// Adjust sleep time as needed
+    queryJob = BigQuery.Jobs.getQueryResults(projectId, queryJob.jobReference.jobId);
+  }
+
+  // Check if there are rows matching the criteria
+  if (queryJob.totalRows = "0") {
+    console.log('No rows returned.');
+    return true;
+  } 
+}
+
+
+function appendToBigQuery(data){
+    // const data_octet = data.getBlob().setContentType('application/octet-stream');
+    var jsondata = JSON.stringify(data);
+    var blobdata = Utilities.newBlob(jsondata,"application/json").setContentType('application/octet-stream')
+    const job = {
+    configuration: {
+      load: {
+        destinationTable: {
+          projectId: projectId,
+          datasetId: datasetId,
+          tableId: tableId
+        },
+        // skipLeadingRows: 1
+      }
+    }
+  };
+  try {
+    const jobResult = BigQuery.Jobs.insert(job, projectId, blobdata);
+    console.log(`Load job started. Status: ${jobResult.status.state}`);
+  } catch (err) {
+    console.log('unable to insert job');
+  }
+}
